@@ -1,36 +1,128 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CASPORT Scanner</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body{
-      margin:0;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-      background:#6e0f13;
-      color:white;
-      font-family:Arial,sans-serif;
-      text-align:center;
-    }
+<title>CASPORT Scanner</title>
 
-    h1{
-      font-size:2rem;
-    }
-  </style>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f5f5f5;
+    text-align:center;
+}
+
+header{
+    background:#6e0f13;
+    color:white;
+    padding:18px;
+    font-size:24px;
+    font-weight:bold;
+}
+
+#reader{
+    width:95%;
+    max-width:450px;
+    margin:20px auto;
+}
+
+#status{
+    margin:15px;
+    font-size:18px;
+    font-weight:bold;
+    color:#6e0f13;
+    word-break:break-word;
+}
+
+button{
+    padding:12px 24px;
+    font-size:18px;
+    border:none;
+    border-radius:8px;
+    background:#6e0f13;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<div>
-<h1>CASPORT Scanner</h1>
-<p>GitHub Pages is working!</p>
+<header>
+CASPORT Scanner
+</header>
+
+<div id="reader"></div>
+
+<button onclick="startScanner()">
+Start Scanner
+</button>
+
+<div id="status">
+Waiting...
 </div>
+
+<script>
+
+let scanner;
+
+function startScanner(){
+
+document.getElementById("status").innerHTML="Opening camera...";
+
+scanner = new Html5Qrcode("reader");
+
+scanner.start(
+
+{ facingMode:"environment" },
+
+{
+fps:10,
+qrbox:250
+},
+
+onScanSuccess,
+
+onScanFailure
+
+).catch(err=>{
+
+document.getElementById("status").innerHTML=
+err;
+
+});
+
+}
+
+function onScanSuccess(decodedText){
+
+document.getElementById("status").innerHTML=
+"Scanned:<br><br>"+decodedText;
+
+// stop after successful scan
+
+scanner.stop();
+
+}
+
+function onScanFailure(error){
+
+// ignore continuous scan errors
+
+}
+
+</script>
 
 </body>
 </html>
