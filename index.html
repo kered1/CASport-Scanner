@@ -39,9 +39,31 @@ button{
     background:#6e0f13;
     color:white;
     cursor:pointer;
+    margin:6px;
 }
 button:hover{
     opacity:.9;
+}
+#confirmBox{
+    display:none;
+    margin:15px auto;
+    max-width:450px;
+    background:white;
+    border:2px solid #6e0f13;
+    border-radius:12px;
+    padding:20px;
+}
+#confirmText{
+    font-size:20px;
+    font-weight:bold;
+    color:#333;
+    margin-bottom:15px;
+}
+.confirmBtns button{
+    min-width:100px;
+}
+#noBtn{
+    background:#777;
 }
 </style>
 </head>
@@ -53,6 +75,13 @@ CASPORT Scanner
 <button onclick="startScanner()">
 Start Scanner
 </button>
+<div id="confirmBox">
+  <div id="confirmText"></div>
+  <div class="confirmBtns">
+    <button id="yesBtn" onclick="confirmScan()">Yes</button>
+    <button id="noBtn" onclick="cancelScan()">No</button>
+  </div>
+</div>
 <div id="status">
 Waiting...
 </div>
@@ -61,6 +90,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxF4tlIjmsm9zOjllu6wtHu
 
 let scanner;
 let isProcessing = false;
+let pendingScan = null;
 
 function getSheetId(){
   const params = new URLSearchParams(window.location.search);
@@ -107,24 +137,35 @@ function onScanSuccess(decodedText){
     return;
   }
 
-  document.getElementById("status").innerHTML = "Sending: " + name + "...";
+  pendingScan = { sheetId, name, studentId };
+
+  document.getElementById("status").innerHTML = "";
+  document.getElementById("confirmText").innerHTML =
+    "Confirm to Scan<br>\"" + name + "\" with \"" + studentId + "\"?";
+  document.getElementById("confirmBox").style.display = "block";
+}
+
+function confirmScan(){
+  if(!pendingScan) return;
+
+  document.getElementById("confirmBox").style.display = "none";
+  document.getElementById("status").innerHTML = "Sending...";
 
   fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({
-      sheetId: sheetId,
-      name: name,
-      studentId: studentId
-    })
+    body: JSON.stringify(pendingScan)
   })
   .then(res => res.json())
   .then(data => {
+    const now = new Date().toLocaleString();
+
     if(data.status === "RECORDED"){
       document.getElementById("status").innerHTML =
-        "🟢 Attendance Recorded<br>" + name;
+        "🟢 " + pendingScan.name + ", " + pendingScan.studentId +
+        " Successfully Scanned at " + now;
     } else if(data.status === "ALREADY_SCANNED"){
       document.getElementById("status").innerHTML =
-        "🟡 Already Scanned<br>" + name;
+        "🟡 Already Scanned<br>" + pendingScan.name;
     } else if(data.status === "SHEET_NOT_FOUND"){
       document.getElementById("status").innerHTML =
         "🔴 Sheet Not Found";
@@ -138,8 +179,16 @@ function onScanSuccess(decodedText){
       "🔴 Network Error";
   })
   .finally(() => {
+    pendingScan = null;
     resumeAfterDelay();
   });
+}
+
+function cancelScan(){
+  document.getElementById("confirmBox").style.display = "none";
+  document.getElementById("status").innerHTML = "Cancelled. Ready to scan again.";
+  pendingScan = null;
+  resumeAfterDelay();
 }
 
 function resumeAfterDelay(){
